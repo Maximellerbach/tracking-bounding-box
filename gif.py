@@ -3,7 +3,7 @@ from glob import glob
 from tqdm import tqdm
 import cv2
 
-size = (320,180)
+size = (640,360)
 
 filenames = glob('doc\\img\\*')#load images
 
