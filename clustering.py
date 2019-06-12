@@ -6,6 +6,7 @@ from sklearn.cluster import *
 import collections
 import math
 
+#####################################
 
 def is_crossing(line1, line2):
     px, py, x, y = line1
@@ -55,8 +56,30 @@ def auto_canny(image, sigma=0.33):
     return edged
 
 
-cap = cv2.VideoCapture('walking.mp4')
+def camera_settings(shape, fov = 90, h = 3):
 
+    y,x = shape
+
+    length = (math.tan(fov/2*math.pi/180)*h)*2
+    
+    ratio = x/length #pixels per meters
+    
+    min_w = ratio*0.2
+    min_h = ratio*1.4
+    min_box = min_w*min_h
+
+    max_w = ratio*1
+    max_h = ratio*2
+    max_box = max_w*max_h
+
+    print(ratio, min_box, max_box)
+    return (min_box, max_box)
+
+#####################################
+
+
+
+cap = cv2.VideoCapture('walking.mp4')
 
 
 #initialisation
@@ -64,8 +87,9 @@ _, img = cap.read()
 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 memory = img
 
-min_box = 800
-max_box = 7500
+min_box , max_box = camera_settings(img.shape, fov = 120, h=9)
+
+
 points = []
 next_points = []
 colors = []
@@ -82,14 +106,6 @@ while(True):
 
     _, img = cap.read()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    '''
-    #difference entre l'image x0 et l'image x1 (detecter le mouvement)
-    new_img = (img-memory*0.5)
-    new_img[new_img<0]=0
-
-    new_img = np.uint8(new_img)
-    '''
 
     can = auto_canny(img, 0.2)
     can = cv2.resize(can, (len(can[0])//2, len(can)//2))
@@ -118,6 +134,7 @@ while(True):
         algo = Birch(n_clusters=int(nb_av/i)+1).fit(points)
         label = algo.labels_
 
+        
         colors = []
 
         ctr = collections.Counter(np.sort(label))
@@ -126,10 +143,10 @@ while(True):
             g = np.random.randint(0, 255)
             r = np.random.randint(0, 255)
             colors.append((b,g,r))
+        
 
 
-
-        min_it = np.full((int(nb_av/i)+1, 3), n*(i+1))
+        min_it = np.full((int(nb_av/i)+1, 3), n)
         max_it = np.full((int(nb_av/i)+1, 3), 0)
 
         for p in range(len(points)):
@@ -152,15 +169,17 @@ while(True):
             x, y, _ = max_it[lab]
 
             cv2.line(track, (px,py), (x,y), color = colors[lab])
-            cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
 
             crossing, direction =  is_crossing((px,py,x,y), crossing_line)
+
             if crossing:
                 counter += direction
                 if direction>0:
                     print('someone has entered')
                 else:
                     print('someone has exited')
+
+        cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
 
 
         cv2.imshow('track', track/255)
@@ -177,6 +196,6 @@ while(True):
     cv2.imshow('img', img)
 
 
-    cv2.waitKey(1)
+    cv2.waitKey(33)
 
     memory = img
