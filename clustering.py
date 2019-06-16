@@ -1,10 +1,12 @@
-import cv2
-import numpy as np
-import time
-import matplotlib.pyplot as plt
-from sklearn.cluster import *
 import collections
 import math
+import time
+import csv
+
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.cluster import Birch
 
 #####################################
 
@@ -75,9 +77,8 @@ def camera_settings(shape, fov = 90, h = 3):
     print(ratio, min_box, max_box)
     return (min_box, max_box)
 
+
 #####################################
-
-
 
 cap = cv2.VideoCapture('walking.mp4')
 
@@ -85,14 +86,15 @@ cap = cv2.VideoCapture('walking.mp4')
 #initialisation
 _, img = cap.read()
 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-memory = img
 
 min_box , max_box = camera_settings(img.shape, fov = 120, h=9)
 
 
 points = []
 next_points = []
+heat_points = [[],[]]
 colors = []
+
 algo = 0
 nb_av = 0
 counter = 0
@@ -100,9 +102,12 @@ counter = 0
 crossing_line = (0, int(img.shape[0]/3), img.shape[1], int(img.shape[0]/3))
 n = 20 # nombre d'image traité avant d'analyser le mouvement
 i = 0
+tot_i = 0
+
 
 while(True):
-    i+=1
+    i += 1
+    tot_i += 1
 
     _, img = cap.read()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -118,25 +123,26 @@ while(True):
 
 
         if min_box<w*h<max_box:
-            cv2.rectangle(can, (x,y), (x+w, y+h), 255)
+            x, y = int((x+(x+w))/2), int((y+(y+h))/2)
+            points.append([x,y,i])
 
-            points.append([int((x+(x+w))/2),int((y+(y+h))/2),i])
             if i == n:
-                next_points.append([int((x+(x+w))/2),int((y+(y+h))/2),0])
+                next_points.append([x,y,0])
+
+            heat_points[0].append(x)
+            heat_points[1].append(y)
+            cv2.rectangle(can, (x,y), (x+w, y+h), 255)
 
             nb_av+=1
     
 
 
     if i == n and len(points)>2:
-        track = np.zeros((can.shape[0], can.shape[1], 3))
-
         algo = Birch(n_clusters=int(nb_av/i)+1).fit(points)
         label = algo.labels_
 
         
         colors = []
-
         ctr = collections.Counter(np.sort(label))
         for lab in range(len(ctr)):
             b = np.random.randint(0, 255)
@@ -148,17 +154,17 @@ while(True):
 
         min_it = np.full((int(nb_av/i)+1, 3), n)
         max_it = np.full((int(nb_av/i)+1, 3), 0)
+        track = np.zeros((can.shape[0], can.shape[1], 3))
 
         for p in range(len(points)):
             lab = label[p]
             x,y,it = points[p]
 
-            if min_it[lab][2] >= it:
+            if min_it[lab][2] >= i:
                 min_it[lab] = [x,y,it]
 
-            if max_it[lab][2] <= it:
+            if max_it[lab][2] <= i:
                 max_it[lab] = [x,y,it]
-
 
             track[y][x]= colors[lab]
 
@@ -180,9 +186,12 @@ while(True):
                     print('someone has exited')
 
         cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
-
-
         cv2.imshow('track', track/255)
+        cv2.imwrite('log\\track\\'+str(counter)+'_'+str(time.time())+'.png',track)
+
+
+        heatmap, xedges, yedges = np.histogram2d(heat_points[0], heat_points[1], bins=(16,9))
+        plt.imsave('log\\heatmap\\'+str(time.time())+'.png', heatmap.T)
 
         points = next_points
         next_points = []
@@ -190,12 +199,12 @@ while(True):
         nb_av = 0
 
 
+
     cv2.putText(can, str(counter), (0,can.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
 
     cv2.imshow('can', can)
+
     cv2.imshow('img', img)
 
-
-    cv2.waitKey(33)
-
+    cv2.waitKey(1)
     memory = img
