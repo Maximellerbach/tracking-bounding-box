@@ -113,7 +113,7 @@ while(True):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     can = auto_canny(img, 0.2)
-    can = cv2.resize(can, (len(can[0])//2, len(can)//2))
+    can = cv2.resize(can, (can.shape[1]//2, can.shape[0]//2))
     
     _, cnts, hie = cv2.findContours(can, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -123,15 +123,16 @@ while(True):
 
 
         if min_box<w*h<max_box:
-            x, y = int((x+(x+w))/2), int((y+(y+h))/2)
-            points.append([x,y,i])
+            cx, cy = int((x+(x+w))/2), int((y+(y+h))/2)
+            points.append([cx,cy,i])
 
             if i == n:
-                next_points.append([x,y,0])
+                next_points.append([cx,cy,0])
 
-            heat_points[0].append(x)
-            heat_points[1].append(y)
-            cv2.rectangle(can, (x,y), (x+w, y+h), 255)
+            heat_points[0].append(cx)
+            heat_points[1].append(cy)
+            
+            #cv2.rectangle(can, (x,y), (x+w, y+h), 255)
 
             nb_av+=1
     
@@ -140,16 +141,6 @@ while(True):
     if i == n and len(points)>2:
         algo = Birch(n_clusters=int(nb_av/i)+1).fit(points)
         label = algo.labels_
-
-        '''
-        colors = []
-        ctr = collections.Counter(np.sort(label))
-        for lab in range(len(ctr)):
-            b = np.random.randint(0, 255)
-            g = np.random.randint(0, 255)
-            r = np.random.randint(0, 255)
-            colors.append((b,g,r))
-        '''
 
 
         min_it = np.full((int(nb_av/i)+1, 3), n)
@@ -166,33 +157,21 @@ while(True):
             if max_it[lab][2] <= i:
                 max_it[lab] = [x,y,it]
 
-            #track[y][x]= colors[lab]
-
-
 
         for lab in range(len(min_it)):
             px, py, _ = min_it[lab]
             x, y, _ = max_it[lab]
 
-            #cv2.line(track, (px,py), (x,y), color = colors[lab])
-
             crossing, direction =  is_crossing((px,py,x,y), crossing_line)
 
             if crossing:
                 counter += direction
-                if direction>0:
-                    print('someone has entered')
-                else:
-                    print('someone has exited')
-
-        #cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
-        #cv2.imshow('track', track/255)
-        #cv2.imwrite('log\\track\\'+str(counter)+'_'+str(time.time())+'.png',track)
 
         #heatmap, xedges, yedges = np.histogram2d(heat_points[0], heat_points[1], bins=(16,9))
         #plt.imsave('log\\heatmap\\'+str(time.time())+'.png', heatmap.T)
-        np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
 
+        #np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
+        
 
         points = next_points
         next_points = []
@@ -206,4 +185,3 @@ while(True):
     #cv2.imshow('img', img)
 
     cv2.waitKey(1)
-    memory = img

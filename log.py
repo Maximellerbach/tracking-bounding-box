@@ -48,6 +48,7 @@ p_dos = glob('log\\points\\*')
 p_dos.sort()
 
 counter = 0
+
 while(True):
     for p in p_dos:
         min_it, max_it = np.load(p)
@@ -70,12 +71,8 @@ while(True):
 
             if crossing:
                 counter += direction
-                if direction>0:
-                    print('someone has entered')
-                else:
-                    print('someone has exited')
 
         cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
         cv2.putText(track, str(counter), (0,track.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
         cv2.imshow('track', track)
-        cv2.waitKey(33)
+        cv2.waitKey(660)
