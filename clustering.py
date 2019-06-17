@@ -141,7 +141,7 @@ while(True):
         algo = Birch(n_clusters=int(nb_av/i)+1).fit(points)
         label = algo.labels_
 
-        
+        '''
         colors = []
         ctr = collections.Counter(np.sort(label))
         for lab in range(len(ctr)):
@@ -149,7 +149,7 @@ while(True):
             g = np.random.randint(0, 255)
             r = np.random.randint(0, 255)
             colors.append((b,g,r))
-        
+        '''
 
 
         min_it = np.full((int(nb_av/i)+1, 3), n)
@@ -166,7 +166,7 @@ while(True):
             if max_it[lab][2] <= i:
                 max_it[lab] = [x,y,it]
 
-            track[y][x]= colors[lab]
+            #track[y][x]= colors[lab]
 
 
 
@@ -174,7 +174,7 @@ while(True):
             px, py, _ = min_it[lab]
             x, y, _ = max_it[lab]
 
-            cv2.line(track, (px,py), (x,y), color = colors[lab])
+            #cv2.line(track, (px,py), (x,y), color = colors[lab])
 
             crossing, direction =  is_crossing((px,py,x,y), crossing_line)
 
@@ -185,13 +185,14 @@ while(True):
                 else:
                     print('someone has exited')
 
-        cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
-        cv2.imshow('track', track/255)
-        cv2.imwrite('log\\track\\'+str(counter)+'_'+str(time.time())+'.png',track)
+        #cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
+        #cv2.imshow('track', track/255)
+        #cv2.imwrite('log\\track\\'+str(counter)+'_'+str(time.time())+'.png',track)
 
+        #heatmap, xedges, yedges = np.histogram2d(heat_points[0], heat_points[1], bins=(16,9))
+        #plt.imsave('log\\heatmap\\'+str(time.time())+'.png', heatmap.T)
+        np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
 
-        heatmap, xedges, yedges = np.histogram2d(heat_points[0], heat_points[1], bins=(16,9))
-        plt.imsave('log\\heatmap\\'+str(time.time())+'.png', heatmap.T)
 
         points = next_points
         next_points = []
@@ -200,11 +201,9 @@ while(True):
 
 
 
-    cv2.putText(can, str(counter), (0,can.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
-
-    cv2.imshow('can', can)
-
-    cv2.imshow('img', img)
+    #cv2.putText(can, str(counter), (0,can.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
+    #cv2.imshow('can', can)
+    #cv2.imshow('img', img)
 
     cv2.waitKey(1)
     memory = img
