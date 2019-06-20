@@ -100,7 +100,7 @@ nb_av = 0
 counter = 0
 
 crossing_line = (0, int(img.shape[0]/3), img.shape[1], int(img.shape[0]/3))
-n = 20 # nombre d'image traité avant d'analyser le mouvement
+n = 30 # nombre d'image traité avant d'analyser le mouvement
 i = 0
 tot_i = 0
 
@@ -112,7 +112,7 @@ while(True):
     _, img = cap.read()
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    can = auto_canny(img, 0.2)
+    can = auto_canny(cv2.blur(img,(3,3)), 0.2)
     can = cv2.resize(can, (can.shape[1]//2, can.shape[0]//2))
     
     _, cnts, hie = cv2.findContours(can, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -139,7 +139,7 @@ while(True):
 
 
     if i == n and len(points)>2:
-        algo = Birch(n_clusters=int(nb_av/i)+1).fit(points)
+        algo = Birch(n_clusters=round(nb_av/i), threshold=1).fit(points)
         label = algo.labels_
 
 
@@ -170,7 +170,7 @@ while(True):
         #heatmap, xedges, yedges = np.histogram2d(heat_points[0], heat_points[1], bins=(16,9))
         #plt.imsave('log\\heatmap\\'+str(time.time())+'.png', heatmap.T)
 
-        #np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
+        np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
         
 
         points = next_points
