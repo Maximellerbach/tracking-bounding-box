@@ -1,5 +1,9 @@
 # bounding-box-tracking
-used clustering to track bounding box
+used sklearn and OpenCV to track bounding box in a sequence of frame.
+I detect people's bounding box using Opencv then I add their coordinates to an array of points,
+every 20 images or so, I use clusering to determine if the box has moved and where did it moved
+
+/!\ this project is still under developpement 
 
 ![img](gifs/img.gif)
 
