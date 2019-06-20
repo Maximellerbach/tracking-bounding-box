@@ -42,7 +42,7 @@ def is_crossing(line1, line2):
 
 
 img = np.zeros((1080,1920,3))
-crossing_line = (0, int(img.shape[0]/3), img.shape[1], int(img.shape[0]/3))
+crossing_line = (0, int(img.shape[0]/4), img.shape[1], int(img.shape[0]/4))
 
 p_dos = glob('log\\points\\*')
 p_dos.sort()
@@ -75,4 +75,4 @@ while(True):
         cv2.line(track, (crossing_line[0], crossing_line[1]), (crossing_line[2], crossing_line[3]), color = (255,255,255))
         cv2.putText(track, str(counter), (0,track.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
         cv2.imshow('track', track)
-        cv2.waitKey(660)
+        cv2.waitKey(1)

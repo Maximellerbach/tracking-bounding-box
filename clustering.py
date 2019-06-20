@@ -1,12 +1,13 @@
 import collections
+import csv
 import math
 import time
-import csv
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import Birch
+from tqdm import tqdm
 
 #####################################
 
@@ -58,20 +59,25 @@ def auto_canny(image, sigma=0.33):
     return edged
 
 
-def camera_settings(shape, fov = 90, h = 3):
+def camera_settings(shape, fov = 120, h = 8):
 
-    y,x = shape
+    '''
+    calculate min and max box using the field of view and resolution
+    '''
+
+
+    y,x,_ = shape
 
     length = (math.tan(fov/2*math.pi/180)*h)*2
     
-    ratio = x/length #pixels per meters
+    ratio = x/length 
     
     min_w = ratio*0.2
-    min_h = ratio*1.4
+    min_h = ratio*1
     min_box = min_w*min_h
 
-    max_w = ratio*1
-    max_h = ratio*2
+    max_w = ratio*2
+    max_h = ratio*4
     max_box = max_w*max_h
 
     print(ratio, min_box, max_box)
@@ -85,10 +91,11 @@ cap = cv2.VideoCapture('walking.mp4')
 
 #initialisation
 _, img = cap.read()
-img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-min_box , max_box = camera_settings(img.shape, fov = 120, h=9)
+fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows=True, varThreshold=200)
+fgmask = fgbg.apply(img)
 
+min_box , max_box = camera_settings(img.shape, fov = 120, h=8)
 
 points = []
 next_points = []
@@ -99,21 +106,22 @@ algo = 0
 nb_av = 0
 counter = 0
 
-crossing_line = (0, int(img.shape[0]/3), img.shape[1], int(img.shape[0]/3))
+crossing_line = (0, img.shape[0]//4, img.shape[1], img.shape[0]//4)
 n = 30 # nombre d'image traité avant d'analyser le mouvement
 i = 0
 tot_i = 0
 
 
-while(True):
+while True:
     i += 1
     tot_i += 1
 
     _, img = cap.read()
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    fgmask = fgbg.apply(img)
 
-    can = auto_canny(cv2.blur(img,(3,3)), 0.2)
+    can = auto_canny(fgmask, 0.33)
     can = cv2.resize(can, (can.shape[1]//2, can.shape[0]//2))
+
     
     _, cnts, hie = cv2.findContours(can, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -132,14 +140,14 @@ while(True):
             heat_points[0].append(cx)
             heat_points[1].append(cy)
             
-            #cv2.rectangle(can, (x,y), (x+w, y+h), 255)
+            cv2.rectangle(can, (x,y), (x+w, y+h), 255)
 
             nb_av+=1
     
 
 
-    if i == n and len(points)>2:
-        algo = Birch(n_clusters=round(nb_av/i), threshold=1).fit(points)
+    if i >= n and len(points)>1:
+        algo = Birch(n_clusters=int(nb_av/i)+1).fit(points)
         label = algo.labels_
 
 
@@ -161,7 +169,7 @@ while(True):
         for lab in range(len(min_it)):
             px, py, _ = min_it[lab]
             x, y, _ = max_it[lab]
-
+            
             crossing, direction =  is_crossing((px,py,x,y), crossing_line)
 
             if crossing:
@@ -170,8 +178,7 @@ while(True):
         #heatmap, xedges, yedges = np.histogram2d(heat_points[0], heat_points[1], bins=(16,9))
         #plt.imsave('log\\heatmap\\'+str(time.time())+'.png', heatmap.T)
 
-        np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
-        
+        #np.save('log\\points\\'+str(time.time())+'.npy', np.array([[min_it],[max_it]]))
 
         points = next_points
         next_points = []
@@ -180,8 +187,9 @@ while(True):
 
 
 
-    #cv2.putText(can, str(counter), (0,can.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
-    #cv2.imshow('can', can)
-    #cv2.imshow('img', img)
+    cv2.putText(can, str(counter), (0,can.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255))
+    cv2.imshow('can', can)
+    cv2.imshow('img', img)
+    cv2.imshow('fgmask', fgmask)
 
     cv2.waitKey(1)
